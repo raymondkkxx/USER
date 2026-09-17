@@ -1,0 +1,24 @@
+T289C 002:131.380   SEGGER J-Link V8.16 Log File
+T289C 002:131.504   DLL Compiled: Feb 26 2025 12:07:26
+T289C 002:131.509   Logging started @ 2025-12-29 01:33
+T289C 002:131.513   Process: D:\Keil_v5\UV4\UV4.exe
+T289C 002:131.525 - 2131.516ms 
+T289C 002:131.533 JLINK_SetWarnOutHandler(...)
+T289C 002:131.537 - 0.005ms 
+T289C 002:131.545 JLINK_OpenEx(...)
+T289C 002:133.772   
+  ***** Error: 
+T289C 002:133.784   Cannot connect to J-Link.
+T289C 002:133.875 - 2.329ms returns "Cannot connect to J-Link."
+T289C 002:134.126 
+  ***** Warning: 
+T289C 002:134.135 API Error: API JLINK_GetHardwareVersion function called before JLINKARM_Open()
+T289C 002:134.142 JLINK_GetHardwareVersion()
+T289C 002:136.421   
+  ***** Error: 
+T289C 002:136.433   Cannot connect to J-Link.
+T289C 002:136.493 - 2.351ms 
+T289C 066:499.992 JLINK_Close()
+T289C 066:500.660 - 0.662ms
+T289C 066:500.712   
+T289C 066:500.716   Closed
