@@ -1,31 +1,22 @@
+#ifndef __XUNJI_H__
+#define __XUNJI_H__
 
-#include "car.h"
-#include "xunji.h"
+#include "stm32f10x.h"
 
-int main(void)
-{
-    /* 1. 外设硬件初始化（注意：本工程无需单独调用 SysTick_Init） */
-    Car_Init();
-    XunOff();
+/* 巡线传感器 GPIO 端口与引脚定义 */
+#define XUNJI_GPIO_CLK       RCC_APB2Periph_GPIOB
+#define XUNJI_PORT           GPIOB
+#define XUNJI_LEFT_PIN       GPIO_Pin_0    // 左侧红外循迹传感器
+#define XUNJI_RIGHT_PIN      GPIO_Pin_1    // 右侧红外循迹传感器
 
-    /* 2. 上电保护：开机先刹车静止 500ms */
-    Car_Stop();
-    Delay_ms(500);
+/* 函数声明 */
+void XunOff(void);           // 巡线传感器引脚初始化
+void XunJi(void);            // 循迹核心处理逻辑
 
-    /* 3. 循迹主控制流：检测到终点时退出循环 */
-    while (1)
-    {
-        if (XunJi() == 0)
-        {
-            Car_Stop();
-            break; // 到达 T 字路口终点，退出巡线
-        }
-    }
+/* 暂停控制接口 */
+void XunJi_Pause(void);      // 暂停循迹并停车
+void XunJi_Resume(void);     // 恢复循迹
+void XunJi_TogglePause(void);// 切换 暂停/运行 状态
+uint8_t XunJi_IsPaused(void);// 获取当前是否处于暂停状态 (1: 暂停, 0: 运行)
 
-    /* 4. 终点安全锁定：小车永久保持停车状态 */
-    while (1)
-    {
-        Car_Stop();
-        Delay_ms(200);
-    }
-}
+#endif /* __XUNJI_H__ */

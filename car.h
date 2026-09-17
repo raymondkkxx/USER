@@ -19,7 +19,7 @@
 // 初始化
 void Car_Init(void);
 
-// 单轮底层控制
+// 单轮控制
 void Motor_LF_Forward(void);
 void Motor_LF_Backward(void);
 void Motor_LF_Stop(void);

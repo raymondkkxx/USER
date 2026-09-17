@@ -1,32 +1,33 @@
 #include "stm32f10x.h"
 #include "SysTick.h"
-#include "car.h"
+#include "car.h" //[cite: 2]
 #include "xunji.h"
 
 int main(void)
 {
-    // 1. 硬件初始化
-    Car_Init();
+    Car_Init(); //[cite: 1, 2]
     XunOff();
+    Car_Stop(); // 初始保持静止[cite: 1, 2]
+    Delay_ms(500);
 
-    // 2. 上电静止延时，留足时间把小车平稳放在起点
-    Car_Stop();
-    Delay_ms(800);
+    // 如果希望上电先处于暂停状态，按下按键再开始：
+    // XunJi_Pause();
 
-    // 3. 循迹运行，直到遇到终点
     while (1)
     {
-        if (XunJi() == 0)
+        /* 示例：如果你有一个按键接在 PA8，可以通过按键切换暂停 */
+        /*
+        if (GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_8) == 0)
         {
-            Car_Stop(); // 到达终点刹停
-            break;
+            Delay_ms(20); // 按键消抖
+            if (GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_8) == 0)
+            {
+                XunJi_TogglePause();
+                while (GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_8) == 0); // 等待松手
+            }
         }
-    }
+        */
 
-    // 4. 终点待机锁定
-    while (1)
-    {
-        Car_Stop();
-        Delay_ms(200);
+        XunJi();
     }
 }

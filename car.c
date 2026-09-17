@@ -18,7 +18,7 @@ void Car_Init(void)
     GPIO_ResetBits(MOTOR_PORT, GPIO_InitStructure.GPIO_Pin);
 }
 
-// =================== 底层单轮驱动（极性已校正） ===================
+// =================== 单轮控制（调换了 Forward 与 Backward 的高低电平） ===================
 
 // 左前轮 (C)
 void Motor_LF_Forward(void)
@@ -92,7 +92,7 @@ void Motor_RR_Stop(void)
     GPIO_ResetBits(MOTOR_PORT, MOTOR_A1_PIN | MOTOR_A2_PIN);
 }
 
-// 刹车
+// 停车
 void Car_Stop(void)
 {
     Motor_LF_Stop();
@@ -101,8 +101,12 @@ void Car_Stop(void)
     Motor_RR_Stop();
 }
 
-// =================== 整车动作控制 ===================
 
+//***********************************************//
+// 以下运动学合成函数保持不变，底层修复后将自动正常工作
+//***********************************************//
+
+// 前进
 void Car_MoveForward(void)
 {
     Motor_LF_Forward();
@@ -111,6 +115,7 @@ void Car_MoveForward(void)
     Motor_RR_Forward();
 }
 
+// 后退
 void Car_MoveBackward(void)
 {
     Motor_LF_Backward();
@@ -119,6 +124,7 @@ void Car_MoveBackward(void)
     Motor_RR_Backward();
 }
 
+// 左移
 void Car_MoveLeft(void)
 {
     Motor_LF_Backward();
@@ -127,6 +133,7 @@ void Car_MoveLeft(void)
     Motor_RR_Backward();
 }
 
+// 右移
 void Car_MoveRight(void)
 {
     Motor_LF_Forward();
@@ -135,6 +142,7 @@ void Car_MoveRight(void)
     Motor_RR_Forward();
 }
 
+// 原地左转
 void Car_RotateLeft(void)
 {
     Motor_LF_Backward();
@@ -143,6 +151,7 @@ void Car_RotateLeft(void)
     Motor_RR_Forward();
 }
 
+// 原地右转
 void Car_RotateRight(void)
 {
     Motor_LF_Forward();
@@ -151,6 +160,7 @@ void Car_RotateRight(void)
     Motor_RR_Backward();
 }
 
+// 左前斜行
 void Car_MoveDiagonalLeftForward(void)
 {
     Motor_LF_Forward();
@@ -159,6 +169,7 @@ void Car_MoveDiagonalLeftForward(void)
     Motor_RR_Forward();
 }
 
+// 右前斜行
 void Car_MoveDiagonalRightForward(void)
 {
     Motor_LF_Stop();
@@ -167,6 +178,7 @@ void Car_MoveDiagonalRightForward(void)
     Motor_RR_Stop();
 }
 
+// 左后斜行
 void Car_MoveDiagonalLeftBackward(void)
 {
     Motor_LF_Stop();
@@ -175,6 +187,7 @@ void Car_MoveDiagonalLeftBackward(void)
     Motor_RR_Stop();
 }
 
+// 右后斜行
 void Car_MoveDiagonalRightBackward(void)
 {
     Motor_LF_Backward();
@@ -183,6 +196,7 @@ void Car_MoveDiagonalRightBackward(void)
     Motor_RR_Backward();
 }
 
+// 绕前轴左转
 void Car_SpinAroundFront_Left(void)
 {
     Motor_LF_Stop();
@@ -191,6 +205,7 @@ void Car_SpinAroundFront_Left(void)
     Motor_RR_Backward();
 }
 
+// 绕前轴右转
 void Car_SpinAroundFront_Right(void)
 {
     Motor_LF_Stop();
@@ -199,6 +214,7 @@ void Car_SpinAroundFront_Right(void)
     Motor_RR_Forward();
 }
 
+// 绕后轴左转
 void Car_SpinAroundRear_Left(void)
 {
     Motor_LF_Backward();
@@ -207,6 +223,7 @@ void Car_SpinAroundRear_Left(void)
     Motor_RR_Stop();
 }
 
+// 绕后轴右转
 void Car_SpinAroundRear_Right(void)
 {
     Motor_LF_Forward();

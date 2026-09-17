@@ -1,76 +1,130 @@
-#include "xunji.h"
-#include "car.h"
+#include <stdio.h>
+#include "stm32f10x.h"
+#include "stm32f10x_rcc.h"
+#include "stm32f10x_gpio.h"
 #include "SysTick.h"
+#include "car.h"
+#include "xunji.h"
 
-// 传感器引脚初始化
+// 暂停标志：1 表示暂停，0 表示运行
+static uint8_t is_paused = 0;
+
 void XunOff(void)
 {
-    GPIO_InitTypeDef GPIO_InitStructure;
-
+    GPIO_InitTypeDef h;
     RCC_APB2PeriphClockCmd(XUNJI_GPIO_CLK, ENABLE);
-
-    GPIO_InitStructure.GPIO_Pin   = XUNJI_LEFT_PIN | XUNJI_RIGHT_PIN;
-    GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IPU; // 内部上拉输入
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-    GPIO_Init(XUNJI_PORT, &GPIO_InitStructure);
+    h.GPIO_Pin   = XUNJI_LEFT_PIN | XUNJI_RIGHT_PIN;
+    h.GPIO_Mode  = GPIO_Mode_IPU;
+    h.GPIO_Speed = GPIO_Speed_50MHz;
+    
+    GPIO_Init(XUNJI_PORT, &h);
 
     GPIO_SetBits(XUNJI_PORT, XUNJI_LEFT_PIN | XUNJI_RIGHT_PIN);
 }
 
-/**
- * @brief  单步循迹逻辑处理
- * @note   标准红外模块特性：白底反光输出 0，黑线/虚空无反光输出 1
- * @retval 0: 到达 T 字路口终点已停下
- *         1: 正常巡线中
- */
-uint8_t XunJi(void)
+// 外部控制函数：暂停
+void XunJi_Pause(void)
 {
-    // 起跑计数器：前 30 次循环（约 1 秒）不检测终点，防止刚放地上时手抖误判
-    static uint16_t start_protect_count = 0;
+    is_paused = 1;
+    Car_Stop(); // 立即停车[cite: 1, 2]
+}
+
+// 外部控制函数：继续/启动
+void XunJi_Resume(void)
+{
+    is_paused = 0;
+}
+
+// 外部控制函数：一键切换（常用于按键触发）
+void XunJi_TogglePause(void)
+{
+    if (is_paused)
+    {
+        XunJi_Resume();
+    }
+    else
+    {
+        XunJi_Pause();
+    }
+}
+
+// 获取当前运行状态
+uint8_t XunJi_IsPaused(void)
+{
+    return is_paused;
+}
+
+void XunJi(void)
+{
+    // 如果处于暂停状态，保持停车并直接返回
+    if (is_paused)
+    {
+        Car_Stop(); //[cite: 1, 2]
+        return;
+    }
+
+    static uint8_t Lastturn = 0;
+    static uint8_t Turnlefttime = 0;
+    static uint8_t Turnrighttime = 0;
 
     uint8_t left_val  = GPIO_ReadInputDataBit(XUNJI_PORT, XUNJI_LEFT_PIN);
     uint8_t right_val = GPIO_ReadInputDataBit(XUNJI_PORT, XUNJI_RIGHT_PIN);
 
-    /* 1. T字路口终点检测：两边探头同时压到横向黑线 (1, 1) */
+    // 两侧脱线（均为白色区域 1）
     if (left_val == 1 && right_val == 1)
     {
-        if (start_protect_count >= 30) // 必须脱离起跑缓冲期后才判定终点
+        Turnlefttime = 0;
+        Turnrighttime = 0;
+
+        if (Lastturn == 1)
         {
-            // 延时 30ms 进行二次确认消抖
-            Delay_ms(30);
-            left_val  = GPIO_ReadInputDataBit(XUNJI_PORT, XUNJI_LEFT_PIN);
-            right_val = GPIO_ReadInputDataBit(XUNJI_PORT, XUNJI_RIGHT_PIN);
-
-            if (left_val == 1 && right_val == 1)
-            {
-                Car_Stop(); // 确认为终点横向黑色胶带，停车
-                return 0;   // 返回终点信号
-            }
+            Car_SpinAroundFront_Left(); //[cite: 1, 2]
+            Delay_ms(150);
+            Turnlefttime++;
         }
+        else if (Lastturn == 2)
+        {
+            Car_SpinAroundFront_Right(); //[cite: 1, 2]
+            Delay_ms(150);
+            Turnrighttime++;
+        }
+        else if (Turnlefttime >= 3)
+        {
+            Car_RotateLeft(); //[cite: 1, 2]
+            Delay_ms(50);
+        }
+        else if (Turnrighttime >= 3)
+        {
+            Car_RotateRight(); //[cite: 1, 2]
+            Delay_ms(50);
+        }
+        else
+        {
+            Car_Stop(); //[cite: 1, 2]
+        }
+        return;
     }
 
-    if (start_protect_count < 30)
+    // 两侧检测到黑线（均为 0）：前进
+    if (left_val == 0 && right_val == 0)
     {
-        start_protect_count++;
+        Car_MoveForward(); //[cite: 1, 2]
+        Lastturn = 0;
+        Turnlefttime = 0;
+        Turnrighttime = 0;
     }
-
-    /* 2. 偏左（右探头压黑线 1，左探头在白底 0）：向右修正 */
-    if (left_val == 0 && right_val == 1)
+    // 偏右（左 0 右 1）：左转修正
+    else if (left_val == 0 && right_val == 1)
     {
-        Car_RotateRight();
-        Delay_ms(25);
+        Car_RotateLeft(); //[cite: 1, 2]
+        Delay_ms(50);
+        Lastturn = 1;
     }
-    /* 3. 偏右（左探头压黑线 1，右探头在白底 0）：向左修正 */
+    // 偏左（左 1 右 0）：右转修正
     else if (left_val == 1 && right_val == 0)
     {
-        Car_RotateLeft();
-        Delay_ms(25);
+        Car_RotateRight(); //[cite: 1, 2]
+        Delay_ms(50);
+        Lastturn = 2;
     }
-    /* 4. 正常居中（两侧均在白底 0，黑线在两探头之间）：全速直行 */
-    else if (left_val == 0 && right_val == 0)
-    {
-        Car_MoveForward();
-    }
-
-    return 1; // 正常循迹中
 }
